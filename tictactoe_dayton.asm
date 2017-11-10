@@ -32,15 +32,15 @@ main:	#li $v0, 4	#print initial instructions
   	#la $a0, instruc1
   	#syscall
   	
-	la $a1, instrucArr #print instruction board
-	jal printBoard
+	#la $a1, instrucArr #print instruction board
+	#jal printBoard
   	
-  	li $v0, 4	#print white space
-  	la $a0, ws
-  	syscall
+  	#li $v0, 4	#print white space
+  	#la $a0, ws
+  	#syscall
   		
-	la $a1, moveArr #print the actual board
-	jal printBoard
+	#la $a1, moveArr #print the actual board
+	#jal printBoard
 	
 	#li $v0, 4	#print white space
   	#la $a0, ws
@@ -55,37 +55,26 @@ main:	#li $v0, 4	#print initial instructions
   	#lw $s6, turn
   	#jal switchTurn
   	
-  	#li $v0, 4	#print white space
-  	#la $a0, ws
-  	#syscall
+  		li $v0, 4	#print white space
+  		la $a0, ws
+  		syscall
   	
-  	#li $a2, 1 #mark top left box
-  	#la $a1, moveArr #print the actual board
-  	#jal markBoard
-	#jal printBoard
+  		li $a2, 1 #mark top left box
+  		la $a1, moveArr #print the actual board
+  		jal markBoard
+		jal printBoard
 ###################################################################################################################################################	
-exit:	li $v0, 10
-	syscall
+exit:		li $v0, 10
+		syscall
 ###################################################################################################################################################
 
-switchTurn:	li $t7, 1 #t7 = 1
-	beq $s6, $t7, oGoes 	#if turn==1 (X just went) branch
-	sw $t7, turn	#else set turn to 1 (O just went)
-	
-#	li $v0, 4	
-# 	la $a0, dubdub
-#  	syscall
-	
-	jr $ra	
-		 
-oGoes:	li $t7, 0
-	sw $t7, turn	  #set turn to 0 (X just went)
-	
-#	li $v0, 4	
-#  	la $a0, pickle
-#  	syscall
-  	
-	jr $ra
+switchTurn:		li $t7, 1 #t7 = 1
+		beq $s6, $t7, oGoes  #if turn==1 (X just went) branch
+		sw $t7, turn  #else set turn to 1 (O just went)
+		jr $ra		 
+oGoes:		li $t7, 0
+		sw $t7, turn  #set turn to 0 (X just went)  	
+		jr $ra
 	
 printBoard:		move $t0, $zero #i=0
 loop1:		sll $t1, $t0, 8 #convert i value to bytes
@@ -115,8 +104,8 @@ markBoard:		#based on value passed in via a0, this function:
 		
 		#a2=1
 		#a1=moveArray
-		sll $t1, $a2, 2 #i=a2*4, remember that a2 will be our transformed input
-		add $t2, $a1, $t1 #t2 = moveArray[i]
-		la $s0, x
-		#sw $s0, (t2)
+		#sll $t1, $a2, 3 #i=a2*4, remember that a2 will be our transformed input
+		add $t2, $a1, $a2 #t2 = moveArray[i]
+		lb $s0, x
+		sb $s0, ($t2)
 		jr $ra
