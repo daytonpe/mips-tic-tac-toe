@@ -12,7 +12,7 @@ xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWins:		.asciiz "\n\nX Wins!\n\n"
 oWins:		.asciiz "\n\nO Wins!\n\n"
-ws:		.asciiz "\n\n\n"
+ws:		.asciiz "\n\n"
 markErr:		.asciiz "\nThis is not a valid input.\nPlease enter an integer from 1 to 9.\n"
 pickle:		.asciiz "PICKLE RICK!"
 dubdub:		.asciiz "RUBALUBADUBDUB!"
@@ -181,7 +181,7 @@ game:		#1)Check turn
 		#6)Prompt for Reset
 		#7)Reset
 		
-		li $t0, 0 #turn counter
+		li $s7, 0 #turn counter
 		
 loop2:		lw $s0, turn
 		beq $s0, $zero, oTurn		
@@ -197,11 +197,16 @@ oTurn:		li $v0, 4
 continueMove:	li $v0, 5	#read an integer
   		syscall
   	  	move $a2, $v0
+  	  	
+  	  	li $v0, 4	
+  		la $a0, ws
+  		syscall
+  	  	
   		la $a1, moveArr #print the actual board
   		jal transformMark
 		jal printBoard
 		
-		addi $t0, $t0, 1
-		beq $t0, 8, endGame
-		j loop2
-endGame:		jr $ra		
+		addi $s7, $s7, 1
+		li $s6, 9
+		beq $s7, $s6, exit
+		j loop2		
