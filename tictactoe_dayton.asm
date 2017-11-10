@@ -7,18 +7,18 @@
 	
 	.data
 	
-instruc1:	.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n\n"
-xTurn:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
-oTurn:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
-xWins:	.asciiz "\n\nX Wins!\n\n"
-oWins:	.asciiz "\n\nO Wins!\n\n"
-ws:	.asciiz "\n\n\n"
-markErr:	.asciiz "\nThis is not a valid input.\nPlease enter an integer from 1 to 9.\n"
-pickle:	.asciiz "PICKLE RICK!"
-dubdub:	.asciiz "RUBALUBADUBDUB!"
-x:	.asciiz "X"
-o:	.asciiz "O"
-go:	.asciiz "GO!:"
+instruc1:		.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n\n"
+xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
+oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
+xWins:		.asciiz "\n\nX Wins!\n\n"
+oWins:		.asciiz "\n\nO Wins!\n\n"
+ws:		.asciiz "\n\n\n"
+markErr:		.asciiz "\nThis is not a valid input.\nPlease enter an integer from 1 to 9.\n"
+pickle:		.asciiz "PICKLE RICK!"
+dubdub:		.asciiz "RUBALUBADUBDUB!"
+x:		.asciiz "X"
+o:		.asciiz "O"
+go:		.asciiz "GO!:"
 
 instrucArr:	.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
 	.space 100
@@ -26,7 +26,7 @@ instrucArr:	.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8',
 moveArr:	.byte '-','|','-','|','-','\n','-','|','-','|','-','\n','-','|','-','|','-'
 	.space 100
 
-turn:	.word 1 # 0--> O 1-->X
+turn:	.word 0 # 0--> O 1-->X
 
 ###################################################################################################################################################
 	.text
@@ -58,16 +58,17 @@ main:	#li $v0, 4	#print initial instructions
   	#jal switchTurn
   	
   		
-    		li $v0, 4	
-  		la $a0, go
-  		syscall	
+    		#li $v0, 4	
+  		#la $a0, go
+  		#syscall	
   		
-  		li $v0, 5	#read an integer
-  		syscall
-  	  	move $a2, $v0
-  		la $a1, moveArr #print the actual board
-  		jal transformMark
-		jal printBoard
+  		#li $v0, 5	#read an integer
+  		#syscall
+  	  	#move $a2, $v0
+  		#la $a1, moveArr #print the actual board
+  		#jal transformMark
+		#jal printBoard
+		jal game
 ###################################################################################################################################################	
 exit:		li $v0, 10
 		syscall
@@ -164,7 +165,43 @@ markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
 		beq $t7, $zero, markO  #if o's turn, mark o and vice versa
 		lb $s0, x
 		sb $s0, ($t2)
+		sw $zero, turn #switch to Xs turn
 		jr $ra
 markO:		lb $s0, o
+		li $s2, 1	#switch to Xs turn
+		sw $s2, turn
 		sb $s0, ($t2)
 		jr $ra
+
+game:		#1)Check turn
+		#2)Prompt correct user for input
+		#3)Mark Board 
+		#4)Check for Winner
+		#5)Notify Winner when Necessary
+		#6)Prompt for Reset
+		#7)Reset
+		
+		li $t0, 0 #turn counter
+		
+loop2:		lw $s0, turn
+		beq $s0, $zero, oTurn		
+		li $v0, 4	
+  		la $a0, xTurnPrompt
+  		syscall
+  		j continueMove
+				
+oTurn:		li $v0, 4	
+  		la $a0, oTurnPrompt
+  		syscall	
+  		
+continueMove:	li $v0, 5	#read an integer
+  		syscall
+  	  	move $a2, $v0
+  		la $a1, moveArr #print the actual board
+  		jal transformMark
+		jal printBoard
+		
+		addi $t0, $t0, 1
+		beq $t0, 8, endGame
+		j loop2
+endGame:		jr $ra		
