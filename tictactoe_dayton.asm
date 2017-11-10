@@ -13,10 +13,12 @@ oTurn:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWins:	.asciiz "\n\nX Wins!\n\n"
 oWins:	.asciiz "\n\nO Wins!\n\n"
 ws:	.asciiz "\n\n\n"
+markErr:	.asciiz "\nThis is not a valid input.\nPlease enter an integer from 1 to 9.\n"
 pickle:	.asciiz "PICKLE RICK!"
 dubdub:	.asciiz "RUBALUBADUBDUB!"
 x:	.asciiz "X"
 o:	.asciiz "O"
+go:	.asciiz "GO!:"
 
 instrucArr:	.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
 	.space 100
@@ -24,7 +26,7 @@ instrucArr:	.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8',
 moveArr:	.byte '-','|','-','|','-','\n','-','|','-','|','-','\n','-','|','-','|','-'
 	.space 100
 
-turn:	.word 0 # 0--> O 1-->X
+turn:	.word 1 # 0--> O 1-->X
 
 ###################################################################################################################################################
 	.text
@@ -55,13 +57,16 @@ main:	#li $v0, 4	#print initial instructions
   	#lw $s6, turn
   	#jal switchTurn
   	
-  		li $v0, 4	#print white space
-  		la $a0, ws
+  		
+    		li $v0, 4	
+  		la $a0, go
+  		syscall	
+  		
+  		li $v0, 5	#read an integer
   		syscall
-  	
-  		li $a2, 1 #mark top left box
+  	  	move $a2, $v0
   		la $a1, moveArr #print the actual board
-  		jal markBoard
+  		jal transformMark
 		jal printBoard
 ###################################################################################################################################################	
 exit:		li $v0, 10
@@ -97,15 +102,69 @@ makeMove: 		#based on the value that is passed in a2 this function:
 		#2)takes in an integer value from 1-9
 		#4)calls the mark function
 		
-markBoard:		#based on value passed in via a0, this function:
+transformMark:	#based on value passed in via a0, this function:
 		#1)transform variable input so that it matches correct board position 1>>0, 8>>15
 		#2)marks the board in the correct position
 		#3)with the correct team (X/O)
+
+		#TRANSFORM INPUT
+		li $t6, 1  #if 1 is input, transform it to 0 on board
+		bne $a2, $t6, mark2
+		li $a2, 0
+		j markBoard
+
+mark2:		li $t6, 2  #2>>2
+		bne $a2, $t6, mark3
+		j markBoard
 		
-		#a2=1
+mark3:		li $t6, 3  #3>>4
+		bne $a2, $t6, mark4
+		li $a2, 4
+		j markBoard
+
+mark4:		li $t6, 4  #4>>6
+		bne $a2, $t6, mark5
+		li $a2, 6
+		j markBoard	
+		
+mark5:		li $t6, 5  #5>>8
+		bne $a2, $t6, mark6
+		li $a2, 8
+		j markBoard					
+			
+mark6:		li $t6, 6  #6>>10
+		bne $a2, $t6, mark7
+		li $a2, 10
+		j markBoard	
+		
+mark7:		li $t6, 7  #7>>12
+		bne $a2, $t6, mark8
+		li $a2, 12
+		j markBoard	
+		
+mark8:		li $t6, 8  #8>>14
+		bne $a2, $t6, mark9
+		li $a2, 14
+		j markBoard	
+
+mark9:		li $t6, 9  #9>>16
+		bne $a2, $t6, markError
+		li $a2, 16
+		j markBoard					
+
+markError:		#print error prompt
+		li $v0, 4	#print white space
+  		la $a0, markErr
+  		syscall
+		jr $ra																												
+											
 		#a1=moveArray
-		#sll $t1, $a2, 3 #i=a2*4, remember that a2 will be our transformed input
-		add $t2, $a1, $a2 #t2 = moveArray[i]
+markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
+		lw $t7, turn
+		beq $t7, $zero, markO  #if o's turn, mark o and vice versa
 		lb $s0, x
+		sb $s0, ($t2)
+		jr $ra
+markO:		lb $s0, o
 		sb $s0, ($t2)
 		jr $ra
