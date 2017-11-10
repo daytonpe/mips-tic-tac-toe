@@ -7,7 +7,7 @@
 	
 	.data
 	
-instruc1:		.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n\n"
+instruc1:		.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWins:		.asciiz "\n\nX Wins!\n\n"
@@ -20,55 +20,29 @@ x:		.asciiz "X"
 o:		.asciiz "O"
 go:		.asciiz "GO!:"
 
-instrucArr:	.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
-	.space 100
+instrucArr:		.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
+		.space 100
 	
-moveArr:	.byte '-','|','-','|','-','\n','-','|','-','|','-','\n','-','|','-','|','-'
-	.space 100
+moveArr:		.byte '-','|','-','|','-','\n','-','|','-','|','-','\n','-','|','-','|','-'
+		.space 100
 
-turn:	.word 0 # 0--> O 1-->X
+turn:		.word 0 # 0--> O 1-->X
 
 ###################################################################################################################################################
-	.text
-main:	#li $v0, 4	#print initial instructions
-  	#la $a0, instruc1
-  	#syscall
-  	
-	#la $a1, instrucArr #print instruction board
-	#jal printBoard
-  	
-  	#li $v0, 4	#print white space
-  	#la $a0, ws
-  	#syscall
-  		
-	#la $a1, moveArr #print the actual board
-	#jal printBoard
-	
-	#li $v0, 4	#print white space
-  	#la $a0, ws
-  	#syscall
-  	
-  	#li $v0, 4	
-  	#la $a0, xTurn
-  	#syscall
-  	
-  	#lw $s6, turn
-  	#jal switchTurn
-  	#lw $s6, turn
-  	#jal switchTurn
-  	
-  		
-    		#li $v0, 4	
-  		#la $a0, go
-  		#syscall	
-  		
-  		#li $v0, 5	#read an integer
+		.text
+main:		#li $v0, 4	#print initial instructions
+  		#la $a0, instruc1
   		#syscall
-  	  	#move $a2, $v0
-  		#la $a1, moveArr #print the actual board
-  		#jal transformMark
+  	
+		#la $a1, instrucArr #print instruction board
 		#jal printBoard
-		jal game
+  	
+  		#li $v0, 4	#print white space
+  		#la $a0, ws
+  		#syscall
+ 
+		#jal game
+		jal check123
 ###################################################################################################################################################	
 exit:		li $v0, 10
 		syscall
@@ -208,5 +182,23 @@ continueMove:	li $v0, 5	#read an integer
 		
 		addi $s7, $s7, 1
 		li $s6, 9
-		beq $s7, $s6, exit
-		j loop2		
+		beq $s7, $s6, exit #if you get to nine moves, exit!
+		j loop2	
+
+				
+check123:		#check if someone has one via the 123 pattern (Really 0,2,4)
+		la $a1, moveArr
+		
+		lb $t1, 0($a1)
+		lb $t2, 2($a1)
+		lb $t3, 4($a1)
+		
+		
+		beq $t1, $t2, bigpickle
+		j exit
+		#when checking if same also need to check that they aren't dashes
+		
+bigpickle:		li $v0, 4
+  		la $a0, pickle
+  		syscall	
+  			
