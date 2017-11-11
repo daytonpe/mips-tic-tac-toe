@@ -5,7 +5,7 @@
 #TIC TAC TOE
 ###################################################################################################################################################	
 	
-	.data
+		.data
 	
 instruc1:		.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
@@ -13,12 +13,16 @@ oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWins:		.asciiz "\n\nX Wins!\n\n"
 oWins:		.asciiz "\n\nO Wins!\n\n"
 ws:		.asciiz "\n\n"
-markErr:		.asciiz "\nThis is not a valid input.\nPlease enter an integer from 1 to 9.\n"
-pickle:		.asciiz "PICKLE RICK!"
-dubdub:		.asciiz "RUBALUBADUBDUB!"
+markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n"
+pickle:		.asciiz "\nPICKLE RICK!"
+dubdub:		.asciiz "\nRUBALUBADUBDUB!"
 x:		.asciiz "X"
 o:		.asciiz "O"
 go:		.asciiz "GO!:"
+winner:		.asciiz "\n\nWinner!\n\n"
+invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another\n\n"
+resetPrompt:	.asciiz "Do you want to play again? (y/n)"
+dash:		.byte '-'
 
 instrucArr:		.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
 		.space 100
@@ -30,19 +34,18 @@ turn:		.word 0 # 0--> O 1-->X
 
 ###################################################################################################################################################
 		.text
-main:		#li $v0, 4	#print initial instructions
-  		#la $a0, instruc1
-  		#syscall
+main:		li $v0, 4	#print initial instructions
+  		la $a0, instruc1
+  		syscall
   	
-		#la $a1, instrucArr #print instruction board
-		#jal printBoard
+		la $a1, instrucArr #print instruction board
+		jal printBoard
   	
-  		#li $v0, 4	#print white space
-  		#la $a0, ws
-  		#syscall
+  		li $v0, 4	#print white space
+  		la $a0, ws
+  		syscall
  
-		#jal game
-		jal check123
+		jal game
 ###################################################################################################################################################	
 exit:		li $v0, 10
 		syscall
@@ -72,10 +75,7 @@ loop1:		sll $t1, $t0, 8 #convert i value to bytes
 		bne $t3, $zero, loop1
 		jr $ra
 	
-makeMove: 		#based on the value that is passed in a2 this function: 
-		#1)prompts user for move based on who's turn it is
-		#2)takes in an integer value from 1-9
-		#4)calls the mark function
+###################################################################################################################################################
 		
 transformMark:	#based on value passed in via a0, this function:
 		#1)transform variable input so that it matches correct board position 1>>0, 8>>15
@@ -132,20 +132,37 @@ markError:		#print error prompt
   		la $a0, markErr
   		syscall
 		jr $ra																												
-											
-		#a1=moveArray
+
+###################################################################################################################################################
+																						
+		#a1=move array
+		#a2=move space
 markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
+		
+		#check if board spot is already taken
+		la $t4, dash
+		lb $t4, ($t4) #so we can check if '-'
+		lb $t6, ($t2)
+		bne $t4, $t6, invalidMove
+		
 		lw $t7, turn
 		beq $t7, $zero, markO  #if o's turn, mark o and vice versa
 		lb $s0, x
 		sb $s0, ($t2)
-		sw $zero, turn #switch to Xs turn
+		sw $zero, turn #switch to Os turn
 		jr $ra
 markO:		lb $s0, o
 		li $s2, 1	#switch to Xs turn
 		sw $s2, turn
 		sb $s0, ($t2)
 		jr $ra
+		
+invalidMove:	li $v0, 4	
+  		la $a0, invalidMovePrompt
+  		syscall	
+  		jr $ra	
+
+###################################################################################################################################################
 
 game:		#1)Check turn
 		#2)Prompt correct user for input
@@ -179,26 +196,91 @@ continueMove:	li $v0, 5	#read an integer
   		la $a1, moveArr #print the actual board
   		jal transformMark
 		jal printBoard
+		jal checkForWinner
 		
-		addi $s7, $s7, 1
+continueGame:	addi $s7, $s7, 1
 		li $s6, 9
-		beq $s7, $s6, exit #if you get to nine moves, exit!
-		j loop2	
-
-				
-check123:		#check if someone has one via the 123 pattern (Really 0,2,4)
-		la $a1, moveArr
 		
-		lb $t1, 0($a1)
+		beq $s7, $s6, exit #if you get to nine moves, exit!
+		j loop2
+			
+###################################################################################################################################################
+
+		#after each move we check for one of the 8 winning combos
+		#winning combos must be either all X or all O and CANNOT have any dashes
+checkForWinner:	la $a1, moveArr
+		jal check123
+		jal check456
+		jal check789
+		jal check147
+		jal check258
+		jal check369
+		jal check159
+		jal check357
+		j continueGame
+					
+check123:		lb $t1, 0($a1)
 		lb $t2, 2($a1)
 		lb $t3, 4($a1)
+		j checkForDashes
 		
+check456:		lb $t1, 6($a1)
+		lb $t2, 8($a1)
+		lb $t3, 10($a1)
+		j checkForDashes		
 		
-		beq $t1, $t2, bigpickle
+check789:		lb $t1, 12($a1)
+		lb $t2, 14($a1)
+		lb $t3, 16($a1)
+		j checkForDashes		
+		
+check147:		lb $t1, 0($a1)
+		lb $t2, 6($a1)
+		lb $t3, 12($a1)
+		j checkForDashes
+		
+check258:		lb $t1, 2($a1)
+		lb $t2, 6($a1)
+		lb $t3, 14($a1)
+		j checkForDashes						
+
+check369:		lb $t1, 4($a1)
+		lb $t2, 10($a1)
+		lb $t3, 16($a1)
+		j checkForDashes	
+		
+check159:		lb $t1, 0($a1)
+		lb $t2, 8($a1)
+		lb $t3, 16($a1)
+		j checkForDashes
+
+check357:		lb $t1, 4($a1)
+		lb $t2, 8($a1)
+		lb $t3, 12($a1)
+		j checkForDashes																													
+		
+checkForDashes:	#Check for a winner after every move.
+		#A dash in a winning combination means it's not a winner																																
+		la $t4, dash
+		lb $t4, ($t4) #so we can check if '-'
+		
+		beq $t1, $t4, noWin #see if any are equal to '-'
+		beq $t2, $t4, noWin
+		beq $t3, $t4, noWin
+		
+		bne $t1, $t2, noWin #see if we have three of same kind in a row
+		bne $t1, $t3, noWin 
+		
+		li $v0, 4 #We've found a winner!
+  		la $a0, winner
+  		syscall
 		j exit
-		#when checking if same also need to check that they aren't dashes
 		
-bigpickle:		li $v0, 4
-  		la $a0, pickle
-  		syscall	
+noWin:		jr $ra
+
+###################################################################################################################################################
+
+reset:		li $v0, 4	#print initial instructions
+  		la $a0, resetPrompt
+  		syscall
   			
