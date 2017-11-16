@@ -3,11 +3,17 @@
 #Karen Mazidi
 #Course Project
 #TIC TAC TOE
+
+#X Can't Win down center column?
+#Invalid moves bump move counter. Probably no need for move counter
+#Add in Tie functionality
+#print a row of hashes at end of a game. Maybe between moves too
+
 ###################################################################################################################################################	
 	
 		.data
 	
-instruc1:		.asciiz "Lets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
+instruc1:		.asciiz "\n\nLets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWins:		.asciiz "\n\nX Wins!\n\n"
@@ -18,10 +24,14 @@ pickle:		.asciiz "\nPICKLE RICK!"
 dubdub:		.asciiz "\nRUBALUBADUBDUB!"
 x:		.asciiz "X"
 o:		.asciiz "O"
+y:		.byte 'y'
+n:		.byte 'n'
 go:		.asciiz "GO!:"
 winner:		.asciiz "\n\nWinner!\n\n"
 invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another\n\n"
-resetPrompt:	.asciiz "Do you want to play again? (y/n)"
+resetPrompt:	.asciiz "Do you want to play again? (y/n) "
+invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
+thanks:		.asciiz "\n\nThanks for playing!\n\nGAME OVER\n\n"
 dash:		.byte '-'
 
 instrucArr:		.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
@@ -47,7 +57,11 @@ main:		li $v0, 4	#print initial instructions
  
 		jal game
 ###################################################################################################################################################	
-exit:		li $v0, 10
+exit:		li $v0, 4	
+  		la $a0, thanks
+  		syscall
+		
+		li $v0, 10
 		syscall
 ###################################################################################################################################################
 
@@ -198,10 +212,10 @@ continueMove:	li $v0, 5	#read an integer
 		jal printBoard
 		jal checkForWinner
 		
-continueGame:	addi $s7, $s7, 1
-		li $s6, 9
+continueGame:	#addi $s7, $s7, 1 #not sure we still need this since we have a checkForWinner function that should end the game after nine moves anyway
+		#li $s6, 9
 		
-		beq $s7, $s6, exit #if you get to nine moves, exit!
+		#beq $s7, $s6, exit #if you get to nine moves, exit!
 		j loop2
 			
 ###################################################################################################################################################
@@ -273,8 +287,9 @@ checkForDashes:	#Check for a winner after every move.
 		
 		li $v0, 4 #We've found a winner!
   		la $a0, winner
+  		jal clearBoard
   		syscall
-		j exit
+		j reset
 		
 noWin:		jr $ra
 
@@ -283,4 +298,38 @@ noWin:		jr $ra
 reset:		li $v0, 4	#print initial instructions
   		la $a0, resetPrompt
   		syscall
-  			
+  		
+  		li $v0, 12	#read in the y/n character
+  		syscall
+  		
+  		lb $t6, y
+  		lb $t5, n
+  		
+  		#user does NOT want to play again
+  		move $t7, $v0
+  		beq $t5, $t7, exit 
+  		
+  		#user DOES want to play again
+  		move $t7, $v0
+  		beq $t6, $t7, game 
+  		
+  		#user enters an invalid response
+  		li $v0, 4	
+  		la $a0, invalidResetPrompt
+  		syscall
+  		j reset 
+  		
+##################################################################################################################################################
+
+clearBoard:   	la $t4, dash
+		lb $t4, ($t4)
+		sb $t4, 0($a1)
+		sb $t4, 2($a1)
+		sb $t4, 4($a1)
+		sb $t4, 6($a1)
+		sb $t4, 8($a1)
+		sb $t4, 10($a1)
+		sb $t4, 12($a1)
+		sb $t4, 14($a1)
+		sb $t4, 16($a1)
+		jr $ra
