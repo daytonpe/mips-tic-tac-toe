@@ -4,10 +4,8 @@
 #Course Project
 #TIC TAC TOE
 
-#X Can't Win down center column?
-#Invalid moves bump move counter. Probably no need for move counter
 #Add in Tie functionality
-#print a row of hashes at end of a game. Maybe between moves too
+#Scoreboard Functionality?
 
 ###################################################################################################################################################	
 	
@@ -20,12 +18,8 @@ xWins:		.asciiz "\n\nX Wins!\n\n"
 oWins:		.asciiz "\n\nO Wins!\n\n"
 ws:		.asciiz "\n\n"
 markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n"
-pickle:		.asciiz "\nPICKLE RICK!"
-dubdub:		.asciiz "\nRUBALUBADUBDUB!"
 x:		.asciiz "X"
 o:		.asciiz "O"
-y:		.byte 'y'
-n:		.byte 'n'
 go:		.asciiz "GO!:"
 winner:		.asciiz "\n\nWinner!\n\n"
 invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another\n\n"
@@ -33,6 +27,8 @@ resetPrompt:	.asciiz "Do you want to play again? (y/n) "
 invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
 thanks:		.asciiz "\n\nThanks for playing!\n\nGAME OVER\n\n"
 dash:		.byte '-'
+y:		.byte 'y'
+n:		.byte 'n'
 
 instrucArr:		.byte '1','|','2','|','3','\n','4','|','5','|','6','\n','7','|','8','|','9'
 		.space 100
@@ -212,10 +208,7 @@ continueMove:	li $v0, 5	#read an integer
 		jal printBoard
 		jal checkForWinner
 		
-continueGame:	#addi $s7, $s7, 1 #not sure we still need this since we have a checkForWinner function that should end the game after nine moves anyway
-		#li $s6, 9
-		
-		#beq $s7, $s6, exit #if you get to nine moves, exit!
+continueGame:	
 		j loop2
 			
 ###################################################################################################################################################
@@ -254,7 +247,7 @@ check147:		lb $t1, 0($a1)
 		j checkForDashes
 		
 check258:		lb $t1, 2($a1)
-		lb $t2, 6($a1)
+		lb $t2, 8($a1)
 		lb $t3, 14($a1)
 		j checkForDashes						
 
