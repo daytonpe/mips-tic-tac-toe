@@ -59,15 +59,19 @@ game:		#1)Check turn
 		li $v0, 4	#print initial instructions
   		la $a0, instruc1
   		syscall
-  	
-		la $a1, instrucArr #print instruction board
+  		
+  		#print instruction board
+		la $a1, instrucArr 
 		jal printBoard
   	
   		li $v0, 4	#print white space
   		la $a0, ws
   		syscall
 		
+		#clear Board for New Game
+		la $a1, moveArr
 		jal clearBoard
+		
 		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
 		
 loop2:		lw $s0, turn
@@ -307,7 +311,9 @@ checkForDashes:	#Check for a winner after every move.
   		beq $t1, $zero, xWins
   		la $a0, oWinsPrompt
   		j printLetterWinner
-xWins:		la $a0, xWinsPrompt			
+  		
+xWins:		la $a0, xWinsPrompt
+			
 printLetterWinner:	syscall
   
 		j reset
