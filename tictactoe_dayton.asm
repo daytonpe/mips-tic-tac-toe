@@ -6,8 +6,6 @@
 
 #Scoreboard Functionality?
 #add invalid response to enter upon entering move number
-#don't reprint board for computer
-
 
 ###################################################################################################################################################	
 	
@@ -76,28 +74,47 @@ game:		#1)Check turn
 		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
 		move $s7, $zero #marker initializes to 0
 		
-gameLoop:		
-
+gameLoop:		#Main loop for the series of actions in one game
 		lw $s0, turn
 		beq $s0, $zero, computerTurn	
 		
+		################BOARD REPRINT AFTER COMPUTER TURN##############
+		#Have to keep this section out of computerTurn loop so that board doesn't get reprinted
+		#...each time the random number generator chooses a number that's already been picked
+		
+		#Sleep for 2 seconds before making move if computer to simulate thinking
+  		li $a0, 2000
+  		li $v0, 32
+  		syscall
+  		
+  		#Print the board after the computer's turn
+		li $v0, 4	
+  		la $a0, ws
+  		syscall
 		la $a1, moveArr
 		jal printBoard
 		
   		################USER'S TURN######################
+		#Prompt the user to enter a value 1-9
 		li $v0, 4	
   		la $a0, xTurnPrompt
   		syscall
-  		li $v0, 5	#read an integer
+  		
+  		#Read an integer from the Player
+  		li $v0, 5	
   		syscall
   		move $a2, $v0
   		
-  		move $s7, $zero #marker initializes to 0
+  		move $s7, $zero #computer 'thinking-marker' initializes to 0
+  			    #used to see if we need to print computer thinking prompt again
+  		
+  		#Use subroutines to mark the transform the input, mark the board, and check for a winner
   		la $a1, moveArr 
 		jal transformMark
 		jal printBoard
 		jal checkForWinner
 		
+		#increment the move count so we can keep track of ties
 		jal incrementMoveCount 
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
 		beq $s5, $t1, tie
@@ -125,36 +142,18 @@ skipCompPrompt:	#Random Number Generator
 		xor $a0, $a0, $a0	#Select random generator 0
 		syscall		#Generate random int (returns in $a0)
 		move $a2, $a0
-		
-		#Whitespace
-		li $v0, 4	
-  		la $a0, ws
-  		syscall
-  		
-		#Sleep for 2 seconds before making move if computer to simulate thinking
-  		li $a0, 2000
-  		li $v0, 32
-  		syscall
   		
   		la $a1, moveArr 
 		jal transformMark
 		jal checkForWinner
-  		
-		
+  			
 		jal incrementMoveCount 
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
 		beq $s5, $t1, tie
 		
 continueGame:	j gameLoop
 		
-###################################################################################################################################################	
 
-exit:		li $v0, 4	
-  		la $a0, thanks
-  		syscall
-		
-		li $v0, 10
-		syscall
 ###################################################################################################################################################
 
 printBoard:		move $t0, $zero #i=0
@@ -163,9 +162,8 @@ printBoard:		move $t0, $zero #i=0
   		la $a0, ws
   		syscall	
 
-loop1:		sll $t1, $t0, 8 #convert i value to bytes
+printLoop:		sll $t1, $t0, 8 #convert i value to bytes
 		add $t2, $a1, $t1 #t2 = moveArray[i]
-		#sw $zero, ($t2) #moveArray[i]=0
 	
 		li $v0, 4
   		la $a0, ($t2) #print each of the numbers in the loop
@@ -175,7 +173,7 @@ loop1:		sll $t1, $t0, 8 #convert i value to bytes
 	
 		li $t5, 17 #array won't be longer than 17
 		slt $t3, $t0, $t5 #loop until we get to end
-		bne $t3, $zero, loop1
+		bne $t3, $zero, printLoop
 		jr $ra
 	
 ###################################################################################################################################################
@@ -252,7 +250,7 @@ markReturn1:	jr $ra
 		#a2=move space
 markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
 		
-		#check if board spot is already taken
+		#Test if board spot is already taken
 		la $t4, dash
 		lb $t4, ($t4) #so we can check if '-'
 		lb $t6, ($t2)
@@ -271,7 +269,8 @@ markO:		lb $s0, o
 		sb $s0, ($t2)
 		jr $ra
 		
-invalidMove:	lw $t1, turn
+invalidMove:	#Prompt that spot was already used
+		lw $t1, turn
 		beq $t1, $zero, markReturn2 #if computer makes an invalid move, don't prompt
 		li $v0, 4	
   		la $a0, invalidMovePrompt
@@ -340,25 +339,42 @@ checkForDashes:	#Check for a winner after every move.
 		la $t4, dash
 		lb $t4, ($t4) #so we can check if '-'
 		
-		beq $t1, $t4, noWin #see if any are equal to '-'
+		#test if any are equal to '-'
+		beq $t1, $t4, noWin 
 		beq $t2, $t4, noWin
 		beq $t3, $t4, noWin
 		
-		bne $t1, $t2, noWin #see if we have three of same kind in a row
+		#test if we have three of same kind in a row
+		bne $t1, $t2, noWin 
 		bne $t1, $t3, noWin 
 		
-		
-		li $v0, 4 #We've found a winner!
+		#We've found a winner!
+		li $v0, 4 
   		la $t1, turn #actually need it to be the opposite of turn
   		lw $t1, ($t1)
   		beq $t1, $zero, xWins
+  		
+  		#Format with White Space
+  		li $v0, 4	
+  		la $a0, ws
+  		syscall
+  		
+  		#Sleep for 2 seconds before making move if computer to simulate thinking
+  		li $a0, 2000
+  		li $v0, 32
+  		syscall
+  		
+  		#Reprint the board and print that the computer has one the game!
+		la $a1, moveArr
+		jal printBoard	
   		la $a0, oWinsPrompt
   		j printLetterWinner
   		
 xWins:		la $a0, xWinsPrompt
 			
 printLetterWinner:	syscall
-  
+  		
+  		#if someone wins, we ask the user if they want to play again
 		j reset
 		
 noWin:		jr $ra
@@ -389,6 +405,7 @@ reset:		#print reset prompt
   		li $v0, 12	
   		syscall
   		
+  		#load in yes and no bytes
   		lb $t6, y
   		lb $t5, n
   		
@@ -422,3 +439,12 @@ clearBoard:   	#clear board of all Xs and Os after a game
 		sb $t4, 14($a1)
 		sb $t4, 16($a1)
 		jr $ra
+		
+###################################################################################################################################################	
+
+exit:		li $v0, 4	
+  		la $a0, thanks
+  		syscall
+		
+		li $v0, 10
+		syscall
