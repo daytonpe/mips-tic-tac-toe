@@ -6,6 +6,8 @@
 
 #Scoreboard Functionality?
 #add invalid response to enter upon entering move number
+#don't reprint board for computer
+#pause only after computer has ACTUALLY found a spot.
 
 ###################################################################################################################################################	
 	
@@ -13,7 +15,7 @@
 	
 instruc1:		.asciiz "\n\nLET'S PLAY TIC TAC TOE!\n***********************\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
-oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
+oTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
 xWinsPrompt:	.asciiz "\n\nX Wins!\n\n"
 oWinsPrompt:	.asciiz "\n\nO Wins!\n\n"
 ws:		.asciiz "\n\n"
@@ -26,6 +28,7 @@ invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another
 resetPrompt:	.asciiz "Do you want to play again? (y/n) "
 invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
 thanks:		.asciiz "\n\nThanks for playing!\n\nGAME OVER\n\n"
+
 dash:		.byte '-'
 y:		.byte 'y'
 n:		.byte 'n'
@@ -83,10 +86,10 @@ loop2:		lw $s0, turn
   		move $a2, $v0
   		j continueMove
 				
-oTurn:		#li $v0, 4	
-  		#la $a0, oTurnPrompt
-  		#syscall	
-  		
+oTurn:		#COMPUTER'S TURN
+		li $v0, 4	
+  		la $a0, oTurnPrompt
+  		syscall
   			
 		li $v0, 42	#Service 42, random int
 		li $a1, 9	#Set max to 9 (min is 1)
@@ -130,6 +133,18 @@ oGoes:		li $t7, 0
 		jr $ra
 	
 printBoard:		move $t0, $zero #i=0
+
+		li $v0, 4	
+  		la $a0, ws
+  		syscall
+		
+		lw $t1, turn
+		beq $t1, $zero, loop1 #if user skip sleeping
+		#Sleep for 2 seconds before making move if computer to simulate thinking
+  		li $a0, 2000
+  		li $v0, 32
+  		syscall	
+
 loop1:		sll $t1, $t0, 8 #convert i value to bytes
 		add $t2, $a1, $t1 #t2 = moveArray[i]
 		#sw $zero, ($t2) #moveArray[i]=0
@@ -207,10 +222,13 @@ mark9:		#9>>16
 		j markBoard					
 
 markError:		#print error prompt
+		lw $t1, turn
+		beq $t1, $zero, markReturn1 #if computer makes an invalid move, don't prompt
 		li $v0, 4	
   		la $a0, markErr
   		syscall
-		jr $ra																												
+  		
+markReturn1:	jr $ra																												
 
 ###################################################################################################################################################
 																						
@@ -230,16 +248,20 @@ markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
 		sb $s0, ($t2)
 		sw $zero, turn #switch to Os turn
 		jr $ra
+		
 markO:		lb $s0, o
 		li $s2, 1	#switch to Xs turn
 		sw $s2, turn
 		sb $s0, ($t2)
 		jr $ra
 		
-invalidMove:	li $v0, 4	
+invalidMove:	lw $t1, turn
+		beq $t1, $zero, markReturn2 #if computer makes an invalid move, don't prompt
+		li $v0, 4	
   		la $a0, invalidMovePrompt
-  		syscall	
-  		jr $ra	
+  		syscall
+  			
+markReturn2:  	jr $ra	
 			
 ###################################################################################################################################################
 
