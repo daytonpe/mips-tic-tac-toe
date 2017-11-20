@@ -5,6 +5,7 @@
 #TIC TAC TOE
 
 #Add in Tie functionality
+#Invalid moves bump move counters
 #Scoreboard Functionality?
 #add invalid response to enter upon entering move number
 
@@ -12,18 +13,17 @@
 	
 		.data
 	
-instruc1:		.asciiz "\n\nLets play some Tic Tac Toe!\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
+instruc1:		.asciiz "\n\nLET'S PLAY TIC TAC TOE!\n***********************\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 oTurnPrompt:	.asciiz "\n\nO's Turn!\n\nChoose your next move: "
 xWinsPrompt:	.asciiz "\n\nX Wins!\n\n"
 oWinsPrompt:	.asciiz "\n\nO Wins!\n\n"
 ws:		.asciiz "\n\n"
-markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n"
+markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n\n"
 x:		.asciiz "X"
 o:		.asciiz "O"
-go:		.asciiz "GO!:"
 winner:		.asciiz "\n\nWinner!\n\n"
-tiePrompt:		.asciiz "\nYou have tied!\n"
+tiePrompt:		.asciiz "\n\nYou have tied!\n\n"
 invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another\n\n"
 resetPrompt:	.asciiz "Do you want to play again? (y/n) "
 invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
@@ -43,7 +43,20 @@ turn:		.word 0 # 0--> O 1-->X
 ###################################################################################################################################################
 		
 		.text
-main:		li $v0, 4	#print initial instructions
+main:		jal game
+
+###################################################################################################################################################
+
+game:		#1)Check turn
+		#2)Prompt correct user for input
+		#3)Mark Board 
+		#4)Check for Winner
+		#5)Notify Winner when Necessary
+		#6)Prompt for Reset
+		#7)Reset
+		
+		#Print Game Instruction
+		li $v0, 4	#print initial instructions
   		la $a0, instruc1
   		syscall
   	
@@ -53,8 +66,41 @@ main:		li $v0, 4	#print initial instructions
   		li $v0, 4	#print white space
   		la $a0, ws
   		syscall
- 
-		jal game
+		
+		jal clearBoard
+		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
+		
+loop2:		lw $s0, turn
+		beq $s0, $zero, oTurn	
+
+		li $v0, 4	
+  		la $a0, xTurnPrompt
+  		syscall
+  		j continueMove
+				
+oTurn:		li $v0, 4	
+  		la $a0, oTurnPrompt
+  		syscall	
+  		
+continueMove:	li $v0, 5	#read an integer
+  		syscall
+  		
+  	  	move $a2, $v0
+  	  	
+  	  	li $v0, 4	
+  		la $a0, ws
+  		syscall
+  	  	
+  		la $a1, moveArr #print the actual board
+  		jal transformMark
+		jal printBoard
+		jal checkForWinner
+		
+		jal incrementMoveCount 
+		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
+		beq $s5, $t1, tie
+		
+continueGame:	j loop2
 		
 ###################################################################################################################################################	
 
@@ -98,8 +144,8 @@ transformMark:	#based on value passed in via a0, this function:
 		#3)with the correct team (X/O)
 
 		#TRANSFORM INPUT
-		if 1 is input, transform it to 0 on board
-		li $t6, 1  #
+		#if 1 is input, transform it to 0 on board
+		li $t6, 1  
 		bne $a2, $t6, mark2
 		li $a2, 0
 		j markBoard
@@ -185,51 +231,6 @@ invalidMove:	li $v0, 4
   		la $a0, invalidMovePrompt
   		syscall	
   		jr $ra	
-
-###################################################################################################################################################
-
-game:		#1)Check turn
-		#2)Prompt correct user for input
-		#3)Mark Board 
-		#4)Check for Winner
-		#5)Notify Winner when Necessary
-		#6)Prompt for Reset
-		#7)Reset
-		
-		jal clearBoard
-		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
-		
-loop2:		jal incrementMoveCount 
-		li $t1, 10	#if counter is at eight and no winner was declared. We have a tie!
-		beq $s5, $t1, tie
-		
-		lw $s0, turn
-		beq $s0, $zero, oTurn	
-
-		li $v0, 4	
-  		la $a0, xTurnPrompt
-  		syscall
-  		j continueMove
-				
-oTurn:		li $v0, 4	
-  		la $a0, oTurnPrompt
-  		syscall	
-  		
-continueMove:	li $v0, 5	#read an integer
-  		syscall
-  		
-  	  	move $a2, $v0
-  	  	
-  	  	li $v0, 4	
-  		la $a0, ws
-  		syscall
-  	  	
-  		la $a1, moveArr #print the actual board
-  		jal transformMark
-		jal printBoard
-		jal checkForWinner
-		
-continueGame:	j loop2
 			
 ###################################################################################################################################################
 
@@ -315,24 +316,28 @@ noWin:		jr $ra
 
 ####################################################################################################################################################
 
-incrementMoveCount:	addi $s5, $s5, 1
+incrementMoveCount:	#move counter used to keep track of ties
+		#if we move 9 times and there is no winner, the players have tied
+		addi $s5, $s5, 1
 		jr $ra
 
 ####################################################################################################################################################
 
-tie:		li $v0, 4	#print tie announcement
+tie:		#print tie announcement
+		li $v0, 4	
   		la $a0, tiePrompt
   		syscall
   		j reset
 
-
 ####################################################################################################################################################
 
-reset:		li $v0, 4	#print initial instructions
+reset:		#print reset prompt
+		li $v0, 4	
   		la $a0, resetPrompt
   		syscall
   		
-  		li $v0, 12	#read in the y/n character
+  		#read in the y/n character
+  		li $v0, 12	
   		syscall
   		
   		lb $t6, y
