@@ -74,8 +74,9 @@ game:		#1)Check turn
 		jal clearBoard
 		
 		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
+		move $s7, $zero #marker initializes to 0
 		
-loop2:		lw $s0, turn
+gameLoop:		lw $s0, turn
 		beq $s0, $zero, computerTurn	
 
 		li $v0, 4	
@@ -85,7 +86,9 @@ loop2:		lw $s0, turn
   		syscall
   		move $a2, $v0
   		
-  		#Player Move
+  		################USER'S TURN######################
+  		
+  		move $s7, $zero #marker initializes to 0
   		la $a1, moveArr 
 		jal transformMark
 		jal printBoard
@@ -95,33 +98,42 @@ loop2:		lw $s0, turn
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
 		beq $s5, $t1, tie
 		
-continueGame:	j loop2
+		j gameLoop
 				
-computerTurn:	#COMPUTER'S TURN
+computerTurn:	################COMPUTER'S TURN##################
+
+		li $t1, 1 #see below for $s7 explanation 
+		beq $s7, $t1, skipCompPrompt 
+		
+		#Print cute computer prompt
 		li $v0, 4	
   		la $a0, compTurnPrompt
   		syscall
-  			
-		li $v0, 42	#Service 42, random int
-		li $a1, 9	#Set max to 9 (min is 1)
+	  		
+  		#Use s7 as our marker that the computer is currently trying to find a move
+  		#Set marker to 1 after first printing compTurnPrompt
+  		#if s7 = 1, don't reprint the board and the prompt each time
+  		li $s7, 1
+  		
+skipCompPrompt:	#Random Number Generator	
+		li $v0, 42		#Service 42, random int
+		li $a1, 9		#Set max to 9 (min is 1)
 		xor $a0, $a0, $a0	#Select random generator 0
 		syscall		#Generate random int (returns in $a0)
 		move $a2, $a0
 		
+		#Whitespace
 		li $v0, 4	
   		la $a0, ws
   		syscall
   		
-  		la $a1, moveArr 
-  		
-  		#lw $t1, turn
-		#bne $t1, $zero, continueMove2 #if user skip sleeping
 		#Sleep for 2 seconds before making move if computer to simulate thinking
-  		#li $a0, 2000
-  		#li $v0, 32
-  		#syscall
+  		li $a0, 2000
+  		li $v0, 32
+  		syscall
   		
-continueMove2:	jal transformMark
+  		la $a1, moveArr 
+		jal transformMark
 		jal printBoard
 		jal checkForWinner
 		
@@ -129,7 +141,7 @@ continueMove2:	jal transformMark
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
 		beq $s5, $t1, tie
 		
-		j loop2
+continueGame:	j gameLoop
 		
 ###################################################################################################################################################	
 
@@ -220,9 +232,9 @@ mark9:		#9>>16
 		li $a2, 16
 		j markBoard					
 
-markError:		#print error prompt
+markError:		#Show Prompt: This is not a valid move.\nPlease enter an integer from 1 to 9
 		lw $t1, turn
-		beq $t1, $zero, markReturn1 #if computer makes an invalid move, don't prompt
+		beq $t1, $zero, markReturn1 #if computer somehow makes an invalid move, don't prompt
 		li $v0, 4	
   		la $a0, markErr
   		syscall
