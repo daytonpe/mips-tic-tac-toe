@@ -4,9 +4,6 @@
 #Course Project
 #TIC TAC TOE
 
-#Scoreboard Functionality?
-#add invalid response to enter upon entering move number
-
 ###################################################################################################################################################	
 	
 		.data
@@ -14,8 +11,8 @@
 instruc1:		.asciiz "\n\nLET'S PLAY TIC TAC TOE!\n***********************\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 compTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
-xWinsPrompt:	.asciiz "\n\nX Wins!\n\n"
-oWinsPrompt:	.asciiz "\n\nO Wins!\n\n"
+xWinsPrompt:	.asciiz "\n\nYou have Won! Go Team X!\n\n"
+oWinsPrompt:	.asciiz "\n\nThe Robot Wins! Go Team O\n\n"
 ws:		.asciiz "\n"
 markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n\n"
 x:		.asciiz "X"
@@ -52,7 +49,7 @@ game:		#1)Check turn
 		#4)Check for Winner
 		#5)Notify Winner when Necessary
 		#6)Prompt for Reset
-		#7)Reset
+		#7)Reset if necessary
 		
 		#Print Game Instruction
 		li $v0, 4	#print initial instructions
@@ -83,6 +80,7 @@ gameLoop:		#Main loop for the series of actions in one game
 		#...each time the random number generator chooses a number that's already been picked
 		
 		#Sleep for 2 seconds before making move if computer to simulate thinking
+  		beq $s7, $zero, userTurn
   		li $a0, 2000
   		li $v0, 32
   		syscall
@@ -96,7 +94,7 @@ gameLoop:		#Main loop for the series of actions in one game
 		
   		################USER'S TURN######################
 		#Prompt the user to enter a value 1-9
-		li $v0, 4	
+userTurn:		li $v0, 4	
   		la $a0, xTurnPrompt
   		syscall
   		
@@ -105,8 +103,12 @@ gameLoop:		#Main loop for the series of actions in one game
   		syscall
   		subi $a2, $v0, 48
   		
-  		move $s7, $zero #computer 'thinking-marker' initializes to 0
-  			    #used to see if we need to print computer thinking prompt again
+  		li $v0, 4	
+  		la $a0, ws
+  		syscall
+  		
+  		move $s7, $zero #computer 'thinking-marker' set to 0
+  			    #used to see if we need to print computer thinking prompt or not
   		
   		#Use subroutines to mark the transform the input, mark the board, and check for a winner
   		la $a1, moveArr 
@@ -367,6 +369,7 @@ checkForDashes:	#Check for a winner after every move.
   		#Reprint the board and print that the computer has one the game!
 		la $a1, moveArr
 		jal printBoard	
+  		
   		la $a0, oWinsPrompt
   		j printLetterWinner
   		
@@ -442,7 +445,8 @@ clearBoard:   	#clear board of all Xs and Os after a game
 		
 ###################################################################################################################################################	
 
-exit:		li $v0, 4	
+exit:		#clean exit
+		li $v0, 4	
   		la $a0, thanks
   		syscall
 		
