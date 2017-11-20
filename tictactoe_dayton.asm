@@ -8,7 +8,7 @@
 	
 		.data
 	
-instruc1:		.asciiz "*************************************\n*******LET'S PLAY TIC TAC TOE!*******\n*************************************\n\nTo make a move, enter a keypad number.\n\nYou will be Team X.\nThe computer is Team O.\n\nSquare numbers are shown below.\n\nGood Luck!\n\n"
+instruc1:		.asciiz "\n*************************************\n*******LET'S PLAY TIC TAC TOE!*******\n*************************************\n\nTo make a move, enter a keypad number.\n\nYou will be Team X.\nThe computer is Team O.\n\nSquare numbers are shown below.\n\nGood Luck!\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 compTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
 xWinsPrompt:	.asciiz "\n\nYou have Won! Go Team X!\n************************\n\n"
@@ -292,42 +292,50 @@ checkForWinner:	la $a1, moveArr
 		jal check357
 		j continueGame
 					
-check123:		lb $t1, 0($a1)
+check123:		#test top horizontal
+		lb $t1, 0($a1)
 		lb $t2, 2($a1)
 		lb $t3, 4($a1)
 		j checkForDashes
 		
-check456:		lb $t1, 6($a1)
+check456:		#test middle horizontal
+		lb $t1, 6($a1)
 		lb $t2, 8($a1)
 		lb $t3, 10($a1)
 		j checkForDashes		
 		
-check789:		lb $t1, 12($a1)
+check789:		#test bottom horizontal
+		lb $t1, 12($a1)
 		lb $t2, 14($a1)
 		lb $t3, 16($a1)
 		j checkForDashes		
 		
-check147:		lb $t1, 0($a1)
+check147:		#test left vertical
+		lb $t1, 0($a1)
 		lb $t2, 6($a1)
 		lb $t3, 12($a1)
 		j checkForDashes
 		
-check258:		lb $t1, 2($a1)
+check258:		#test middle vertical
+		lb $t1, 2($a1)
 		lb $t2, 8($a1)
 		lb $t3, 14($a1)
 		j checkForDashes						
 
-check369:		lb $t1, 4($a1)
+check369:		#test right vertical
+		lb $t1, 4($a1)
 		lb $t2, 10($a1)
 		lb $t3, 16($a1)
 		j checkForDashes	
 		
-check159:		lb $t1, 0($a1)
+check159:		#check top left to bottom right diagonal
+		lb $t1, 0($a1)
 		lb $t2, 8($a1)
 		lb $t3, 16($a1)
 		j checkForDashes
 
-check357:		lb $t1, 4($a1)
+check357:		#check top right to bottom left diagonal
+		lb $t1, 4($a1)
 		lb $t2, 8($a1)
 		lb $t3, 12($a1)
 		j checkForDashes																													
@@ -366,32 +374,37 @@ checkForDashes:	#Check for a winner after every move.
 		la $a1, moveArr
 		jal printBoard	
   		
+  		#Print that the computer has won this game
   		la $a0, oWinsPrompt
-  		j printLetterWinner
+  		j printWinner
   		
 xWins:		la $a0, xWinsPrompt
 			
-printLetterWinner:	syscall
+printWinner:	syscall
   		
   		#if someone wins, we ask the user if they want to play again
 		j reset
 		
-noWin:		jr $ra
-
-####################################################################################################################################################
-
-incrementMoveCount:	#move counter used to keep track of ties
-		#if we move 9 times and there is no winner, the players have tied
-		addi $s5, $s5, 1
+noWin:		#no one has won. Continue game
 		jr $ra
 
 ####################################################################################################################################################
 
-tie:		la $a1, moveArr 
+tie:		#Tie functionality changes based on who forces the tie
+		lw $s0, turn
+		beq $s0, $zero, announceTie
+		
+		#Format with white Space
+		li $v0, 4	
+  		la $a0, ws
+  		syscall
+  		
+  		#Due to way we generate computer move, we need to reprint board here only for the computer
+		la $a1, moveArr 
 		jal printBoard
 		
 		#print tie announcement
-		li $v0, 4	
+announceTie:	li $v0, 4	
   		la $a0, tiePrompt
   		syscall
   		j reset
@@ -444,10 +457,11 @@ clearBoard:   	#clear board of all Xs and Os after a game
 		
 ###################################################################################################################################################	
 
-exit:		#clean exit
+exit:		#thank user for playing
 		li $v0, 4	
   		la $a0, thanks
   		syscall
 		
+		#clean exit
 		li $v0, 10
 		syscall
