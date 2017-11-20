@@ -4,8 +4,6 @@
 #Course Project
 #TIC TAC TOE
 
-#Add in Tie functionality
-#Invalid moves bump move counters
 #Scoreboard Functionality?
 #add invalid response to enter upon entering move number
 
@@ -80,22 +78,29 @@ loop2:		lw $s0, turn
 		li $v0, 4	
   		la $a0, xTurnPrompt
   		syscall
+  		li $v0, 5	#read an integer
+  		syscall
+  		move $a2, $v0
   		j continueMove
 				
-oTurn:		li $v0, 4	
-  		la $a0, oTurnPrompt
-  		syscall	
+oTurn:		#li $v0, 4	
+  		#la $a0, oTurnPrompt
+  		#syscall	
   		
-continueMove:	li $v0, 5	#read an integer
-  		syscall
-  		
-  	  	move $a2, $v0
-  	  	
-  	  	li $v0, 4	
+  			
+		li $v0, 42	#Service 42, random int
+		li $a1, 9	#Set max to 9 (min is 1)
+		xor $a0, $a0, $a0	#Select random generator 0
+		syscall		#Generate random int (returns in $a0)
+		move $a2, $a0
+		
+		li $v0, 4	
   		la $a0, ws
   		syscall
-  	  	
-  		la $a1, moveArr #print the actual board
+  		
+continueMove:	#make move based on what user or computer chooses.
+  	  	#move is in $a2
+  		la $a1, moveArr 
   		jal transformMark
 		jal printBoard
 		jal checkForWinner
