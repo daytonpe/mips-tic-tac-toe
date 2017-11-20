@@ -8,21 +8,20 @@
 	
 		.data
 	
-instruc1:		.asciiz "\n\nLET'S PLAY TIC TAC TOE!\n***********************\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
+instruc1:		.asciiz "*************************************\n*******LET'S PLAY TIC TAC TOE!*******\n*************************************\n\nTo make a move, enter a keypad number.\n\nYou will be Team X.\nThe computer is Team O.\n\nSquare numbers are shown below.\n\nGood Luck!\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
 compTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
-xWinsPrompt:	.asciiz "\n\nYou have Won! Go Team X!\n\n"
-oWinsPrompt:	.asciiz "\n\nThe Robot Wins! Go Team O\n\n"
+xWinsPrompt:	.asciiz "\n\nYou have Won! Go Team X!\n************************\n\n"
+oWinsPrompt:	.asciiz "\n\nThe Robot Wins! Go Team O!\n**************************\n\n"
 ws:		.asciiz "\n"
 markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n\n"
 x:		.asciiz "X"
 o:		.asciiz "O"
-winner:		.asciiz "\n\nWinner!\n\n"
 tiePrompt:		.asciiz "\n\nYou have tied!\n\n"
 invalidMovePrompt:	.asciiz "\nThat spot has already been used.\nPlease use another\n\n"
 resetPrompt:	.asciiz "Do you want to play again? (y/n) "
 invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
-thanks:		.asciiz "\n\nThanks for playing!\n\nGAME OVER\n\n"
+thanks:		.asciiz "\n\nThanks for playing!\n\n*************************************\n**************GAME OVER**************\n*************************************\n"
 
 dash:		.byte '-'
 y:		.byte 'y'
@@ -72,6 +71,10 @@ game:		#1)Check turn
 		move $s7, $zero #marker initializes to 0
 		
 gameLoop:		#Main loop for the series of actions in one game
+		
+		li $t1, 9	#if counter is at eight and no winner was declared. We have a tie!
+		beq $s5, $t1, tie
+		
 		lw $s0, turn
 		beq $s0, $zero, computerTurn	
 		
@@ -81,7 +84,7 @@ gameLoop:		#Main loop for the series of actions in one game
 		
 		#Sleep for 2 seconds before making move if computer to simulate thinking
   		beq $s7, $zero, userTurn
-  		li $a0, 2000
+  		li $a0, 1000
   		li $v0, 32
   		syscall
   		
@@ -116,11 +119,6 @@ userTurn:		li $v0, 4
 		jal printBoard
 		jal checkForWinner
 		
-		#increment the move count so we can keep track of ties
-		jal incrementMoveCount 
-		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
-		beq $s5, $t1, tie
-		
 		j gameLoop
 				
 computerTurn:	################COMPUTER'S TURN##################
@@ -140,7 +138,7 @@ computerTurn:	################COMPUTER'S TURN##################
   		
 skipCompPrompt:	#Random Number Generator	
 		li $v0, 42		#Service 42, random int
-		li $a1, 9		#Set max to 9 (min is 1)
+		li $a1, 10		#Set max to 9 (min is 1)
 		xor $a0, $a0, $a0	#Select random generator 0
 		syscall		#Generate random int (returns in $a0)
 		move $a2, $a0
@@ -148,10 +146,6 @@ skipCompPrompt:	#Random Number Generator
   		la $a1, moveArr 
 		jal transformMark
 		jal checkForWinner
-  			
-		jal incrementMoveCount 
-		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
-		beq $s5, $t1, tie
 		
 continueGame:	j gameLoop
 		
@@ -263,12 +257,14 @@ markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
 		lb $s0, x
 		sb $s0, ($t2)
 		sw $zero, turn #switch to Os turn
+		addi $s5, $s5, 1 #Increment tie tracker
 		jr $ra
 		
 markO:		lb $s0, o
 		li $s2, 1	#switch to Xs turn
 		sw $s2, turn
 		sb $s0, ($t2)
+		addi $s5, $s5, 1 #Increment tie tracker	
 		jr $ra
 		
 invalidMove:	#Prompt that spot was already used
@@ -362,7 +358,7 @@ checkForDashes:	#Check for a winner after every move.
   		syscall
   		
   		#Sleep for 2 seconds before making move if computer to simulate thinking
-  		li $a0, 2000
+  		li $a0, 1000
   		li $v0, 32
   		syscall
   		
@@ -391,7 +387,10 @@ incrementMoveCount:	#move counter used to keep track of ties
 
 ####################################################################################################################################################
 
-tie:		#print tie announcement
+tie:		la $a1, moveArr 
+		jal printBoard
+		
+		#print tie announcement
 		li $v0, 4	
   		la $a0, tiePrompt
   		syscall
