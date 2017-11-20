@@ -4,6 +4,8 @@
 #Course Project
 #TIC TAC TOE
 
+#Program lets a user play Tic Tac Toe against a random number generator powered AI. 
+
 ###################################################################################################################################################	
 	
 		.data
