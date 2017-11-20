@@ -7,7 +7,7 @@
 #Scoreboard Functionality?
 #add invalid response to enter upon entering move number
 #don't reprint board for computer
-#pause only after computer has ACTUALLY found a spot.
+
 
 ###################################################################################################################################################	
 	
@@ -15,16 +15,16 @@
 	
 instruc1:		.asciiz "\n\nLET'S PLAY TIC TAC TOE!\n***********************\n\nTo make a move, enter the square number and hit return.\nSquare numbers are shown below:\n\n"
 xTurnPrompt:	.asciiz "\n\nX's Turn!\n\nChoose your next move: "
-oTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
+compTurnPrompt:	.asciiz "\n\nYour robo-adversary is contemplating... "
 xWinsPrompt:	.asciiz "\n\nX Wins!\n\n"
 oWinsPrompt:	.asciiz "\n\nO Wins!\n\n"
-ws:		.asciiz "\n\n"
+ws:		.asciiz "\n"
 markErr:		.asciiz "\nThis is not a valid move.\nPlease enter an integer from 1 to 9.\n\n"
 x:		.asciiz "X"
 o:		.asciiz "O"
 winner:		.asciiz "\n\nWinner!\n\n"
 tiePrompt:		.asciiz "\n\nYou have tied!\n\n"
-invalidMovePrompt:	.asciiz "That spot has already been used.\nPlease use another\n\n"
+invalidMovePrompt:	.asciiz "\nThat spot has already been used.\nPlease use another\n\n"
 resetPrompt:	.asciiz "Do you want to play again? (y/n) "
 invalidResetPrompt:	.asciiz "\nInvalid Response. Please enter 'y' or 'n'\n"
 thanks:		.asciiz "\n\nThanks for playing!\n\nGAME OVER\n\n"
@@ -76,7 +76,7 @@ game:		#1)Check turn
 		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
 		
 loop2:		lw $s0, turn
-		beq $s0, $zero, oTurn	
+		beq $s0, $zero, computerTurn	
 
 		li $v0, 4	
   		la $a0, xTurnPrompt
@@ -84,11 +84,22 @@ loop2:		lw $s0, turn
   		li $v0, 5	#read an integer
   		syscall
   		move $a2, $v0
-  		j continueMove
+  		
+  		#Player Move
+  		la $a1, moveArr 
+		jal transformMark
+		jal printBoard
+		jal checkForWinner
+		
+		jal incrementMoveCount 
+		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
+		beq $s5, $t1, tie
+		
+continueGame:	j loop2
 				
-oTurn:		#COMPUTER'S TURN
+computerTurn:	#COMPUTER'S TURN
 		li $v0, 4	
-  		la $a0, oTurnPrompt
+  		la $a0, compTurnPrompt
   		syscall
   			
 		li $v0, 42	#Service 42, random int
@@ -101,10 +112,16 @@ oTurn:		#COMPUTER'S TURN
   		la $a0, ws
   		syscall
   		
-continueMove:	#make move based on what user or computer chooses.
-  	  	#move is in $a2
   		la $a1, moveArr 
-  		jal transformMark
+  		
+  		#lw $t1, turn
+		#bne $t1, $zero, continueMove2 #if user skip sleeping
+		#Sleep for 2 seconds before making move if computer to simulate thinking
+  		#li $a0, 2000
+  		#li $v0, 32
+  		#syscall
+  		
+continueMove2:	jal transformMark
 		jal printBoard
 		jal checkForWinner
 		
@@ -112,7 +129,7 @@ continueMove:	#make move based on what user or computer chooses.
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
 		beq $s5, $t1, tie
 		
-continueGame:	j loop2
+		j loop2
 		
 ###################################################################################################################################################	
 
@@ -124,25 +141,10 @@ exit:		li $v0, 4
 		syscall
 ###################################################################################################################################################
 
-switchTurn:		li $t7, 1 #t7 = 1
-		beq $s6, $t7, oGoes  #if turn==1 (X just went) branch
-		sw $t7, turn  #else set turn to 1 (O just went)
-		jr $ra		 
-oGoes:		li $t7, 0
-		sw $t7, turn  #set turn to 0 (X just went)  	
-		jr $ra
-	
 printBoard:		move $t0, $zero #i=0
 
 		li $v0, 4	
   		la $a0, ws
-  		syscall
-		
-		lw $t1, turn
-		beq $t1, $zero, loop1 #if user skip sleeping
-		#Sleep for 2 seconds before making move if computer to simulate thinking
-  		li $a0, 2000
-  		li $v0, 32
   		syscall	
 
 loop1:		sll $t1, $t0, 8 #convert i value to bytes
@@ -162,12 +164,9 @@ loop1:		sll $t1, $t0, 8 #convert i value to bytes
 	
 ###################################################################################################################################################
 		
-transformMark:	#based on value passed in via a0, this function:
-		#1)transform variable input so that it matches correct board position 1>>0, 8>>15
-		#2)marks the board in the correct position
-		#3)with the correct team (X/O)
+transformMark:	#based on value passed in via a0, this function transforms 
+		#variable input so that it matches correct board position 1>>0, 8>>15
 
-		#TRANSFORM INPUT
 		#if 1 is input, transform it to 0 on board
 		li $t6, 1  
 		bne $a2, $t6, mark2
@@ -231,7 +230,9 @@ markError:		#print error prompt
 markReturn1:	jr $ra																												
 
 ###################################################################################################################################################
-																						
+
+		#This section actually markes the board to be displayed
+																																														
 		#a1=move array
 		#a2=move space
 markBoard:		add $t2, $a1, $a2 #t2 = moveArray[i]
@@ -392,7 +393,9 @@ reset:		#print reset prompt
   		
 ##################################################################################################################################################
 
-clearBoard:   	la $t4, dash
+clearBoard:   	#clear board of all Xs and Os after a game
+		#actually shorter to do it manually than with a loop
+		la $t4, dash
 		lb $t4, ($t4)
 		sb $t4, 0($a1)
 		sb $t4, 2($a1)
