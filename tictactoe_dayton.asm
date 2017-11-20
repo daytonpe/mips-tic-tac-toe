@@ -101,9 +101,9 @@ gameLoop:		#Main loop for the series of actions in one game
   		syscall
   		
   		#Read an integer from the Player
-  		li $v0, 5	
+  		li $v0, 12	
   		syscall
-  		move $a2, $v0
+  		subi $a2, $v0, 48
   		
   		move $s7, $zero #computer 'thinking-marker' initializes to 0
   			    #used to see if we need to print computer thinking prompt again
