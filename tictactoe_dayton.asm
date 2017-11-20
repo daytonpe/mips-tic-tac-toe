@@ -76,17 +76,21 @@ game:		#1)Check turn
 		move $s5, $zero #initialize the move counter to 0. Use this for tie checking
 		move $s7, $zero #marker initializes to 0
 		
-gameLoop:		lw $s0, turn
-		beq $s0, $zero, computerTurn	
+gameLoop:		
 
+		lw $s0, turn
+		beq $s0, $zero, computerTurn	
+		
+		la $a1, moveArr
+		jal printBoard
+		
+  		################USER'S TURN######################
 		li $v0, 4	
   		la $a0, xTurnPrompt
   		syscall
   		li $v0, 5	#read an integer
   		syscall
   		move $a2, $v0
-  		
-  		################USER'S TURN######################
   		
   		move $s7, $zero #marker initializes to 0
   		la $a1, moveArr 
@@ -134,8 +138,8 @@ skipCompPrompt:	#Random Number Generator
   		
   		la $a1, moveArr 
 		jal transformMark
-		jal printBoard
 		jal checkForWinner
+  		
 		
 		jal incrementMoveCount 
 		li $t1, 8	#if counter is at eight and no winner was declared. We have a tie!
@@ -237,8 +241,7 @@ markError:		#Show Prompt: This is not a valid move.\nPlease enter an integer fro
 		beq $t1, $zero, markReturn1 #if computer somehow makes an invalid move, don't prompt
 		li $v0, 4	
   		la $a0, markErr
-  		syscall
-  		
+  		syscall		
 markReturn1:	jr $ra																												
 
 ###################################################################################################################################################
@@ -272,8 +275,8 @@ invalidMove:	lw $t1, turn
 		beq $t1, $zero, markReturn2 #if computer makes an invalid move, don't prompt
 		li $v0, 4	
   		la $a0, invalidMovePrompt
-  		syscall
-  			
+  		syscall	
+  					
 markReturn2:  	jr $ra	
 			
 ###################################################################################################################################################
